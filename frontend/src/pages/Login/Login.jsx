@@ -3,17 +3,13 @@ import PasswordInput from "../../components/Input/PasswordInput"
 import { Link, useNavigate } from "react-router-dom"
 import { validateEmail } from "../../utils/helper"
 import { useDispatch } from "react-redux"
-import axios from "axios"
-import { toast } from "react-toastify"
-
 import {
   signInFailure,
   signInStart,
   signInSuccess,
 } from "../../redux/user/userSlice"
-
-// 1) Define this right after imports
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+import axios from "axios"
+import { toast } from "react-toastify"
 
 const Login = () => {
   const [email, setEmail] = useState("")
@@ -38,27 +34,29 @@ const Login = () => {
 
     setError("")
 
+    // Login API
+
     try {
       dispatch(signInStart())
 
-      // 2) Use your environment variable here:
       const res = await axios.post(
-        `${API_BASE_URL}/api/auth/signin`,
+        "https://backendnotes-taupe.vercel.app/api/auth/signin",
         { email, password },
         { withCredentials: true }
       )
 
       if (res.data.success === false) {
         toast.error(res.data.message)
-        return dispatch(signInFailure(res.data.message))
+        console.log(res.data)
+        dispatch(signInFailure(data.message))
       }
 
       toast.success(res.data.message)
       dispatch(signInSuccess(res.data))
       navigate("/")
-    } catch (err) {
-      toast.error(err.message)
-      dispatch(signInFailure(err.message))
+    } catch (error) {
+      toast.error(error.message)
+      dispatch(signInFailure(error.message))
     }
   }
 

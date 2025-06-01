@@ -37,7 +37,7 @@ const Signup = () => {
     // sign up api
     try {
       const res = await axios.post(
-        "https://mern-note-apps.vercel.app/api/auth/signup",
+        "https://backendnotes-taupe.vercel.app/api/auth/signup",
         { username: name, email, password },
         { withCredentials: true }
       )
