@@ -1,0 +1,3 @@
+git rm -r --cached node_modules/ .env .vercel/  # If previously tracked
+git add .gitignore
+git commit -m "Update .gitignore"
