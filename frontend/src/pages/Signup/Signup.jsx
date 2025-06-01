@@ -1,113 +1,141 @@
-import React, { useState } from "react"
-import PasswordInput from "../../components/Input/PasswordInput"
-import { Link, useNavigate } from "react-router-dom"
-import { validateEmail } from "../../utils/helper"
-import axios from "axios"
-import { toast } from "react-toastify"
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+import React, { useState } from "react";
+import PasswordInput from "../../components/Input/PasswordInput";
+import { Link, useNavigate } from "react-router-dom";
+import { validateEmail } from "../../utils/helper";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const Signup = () => {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSignUp = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setError("");
 
-    if (!name) {
-      setError("Please enter your name")
-      return
+    // Validation
+    if (!formData.name.trim()) {
+      setError("Please enter your name");
+      return;
     }
 
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email address")
-      return
+    if (!validateEmail(formData.email)) {
+      setError("Please enter a valid email address");
+      return;
     }
 
-    if (!password) {
-      setError("Please enter the password")
-      return
+    if (!formData.password) {
+      setError("Please enter the password");
+      return;
     }
 
-    setError("")
+    setIsLoading(true);
 
-    // sign up api
     try {
-      const res = await axios.post(
-        "https://backendnotes-taupe.vercel.app/api/auth/signup",
-        { username: name, email, password },
-        { withCredentials: true }
-      )
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`,
+        {
+          username: formData.name,
+          email: formData.email,
+          password: formData.password
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
 
-      if (res.data.success === false) {
-        setError(res.data.message)
-        toast.error(res.data.message)
-        return
+      if (!data.success) {
+        throw new Error(data.message || "Registration failed");
       }
 
-      toast.success(res.data.message)
-
-      setError("")
-
-      navigate("/login")
+      toast.success("Registration successful! Please login.");
+      navigate("/login");
     } catch (error) {
-      toast.error(error.message)
-      console.log(error.message)
-      setError(error.message)
+      const errorMsg = error.response?.data?.message || 
+                     error.message || 
+                     "Registration failed. Please try again.";
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <>
-      <div className="flex items-center justify-center mt-28">
-        <div className="w-96 border rounded bg-white px-7 py-10">
-          <form onSubmit={handleSignUp}>
-            <h4 className="text-2xl mb-7">Sign Up</h4>
+    <div className="flex items-center justify-center mt-28">
+      <div className="w-96 border rounded bg-white px-7 py-10">
+        <form onSubmit={handleSignUp}>
+          <h4 className="text-2xl mb-7">Sign Up</h4>
 
-            <input
-              type="text"
-              placeholder="Name"
-              className="input-box"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+          <input
+            name="name"
+            type="text"
+            placeholder="Name"
+            className="input-box"
+            value={formData.name}
+            onChange={handleChange}
+          />
 
-            <input
-              type="text"
-              placeholder="Email"
-              className="input-box"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            className="input-box"
+            value={formData.email}
+            onChange={handleChange}
+          />
 
-            <PasswordInput
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          <PasswordInput
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+          />
 
-            {error && <p className="text-red-500 text-sm pb-1">{error}</p>}
-
-            <button type="submit" className="btn-primary">
-              SIGN UP
-            </button>
-
-            <p className="text-sm text-center mt-4">
-              Already have an account?{" "}
-              <Link
-                to={"/login"}
-                className="font-medium text-[#2B85FF] underline"
-              >
-                Login
-              </Link>
+          {error && (
+            <p className="text-red-500 text-sm pb-1">
+              {error}
             </p>
-          </form>
-        </div>
-      </div>
-    </>
-  )
-}
+          )}
 
-export default Signup
+          <button 
+            type="submit" 
+            className="btn-primary"
+            disabled={isLoading}
+          >
+            {isLoading ? "Creating account..." : "SIGN UP"}
+          </button>
+
+          <p className="text-sm text-center mt-4">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-[#2B85FF] underline"
+            >
+              Login
+            </Link>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Signup;

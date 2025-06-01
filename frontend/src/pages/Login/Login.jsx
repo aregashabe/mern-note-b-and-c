@@ -1,64 +1,69 @@
-import React, { useState } from "react"
-import PasswordInput from "../../components/Input/PasswordInput"
-import { Link, useNavigate } from "react-router-dom"
-import { validateEmail } from "../../utils/helper"
-import { useDispatch } from "react-redux"
+import React, { useState } from "react";
+import PasswordInput from "../../components/Input/PasswordInput";
+import { Link, useNavigate } from "react-router-dom";
+import { validateEmail } from "../../utils/helper";
+import { useDispatch } from "react-redux";
 import {
   signInFailure,
   signInStart,
   signInSuccess,
-} from "../../redux/user/userSlice"
-import axios from "axios"
-import { toast } from "react-toastify"
+} from "../../redux/user/userSlice";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+// Set axios defaults for all requests
+axios.defaults.baseURL = "https://backendnotes-taupe.vercel.app";
+axios.defaults.withCredentials = true;
 
 const Login = () => {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateEmail(email)) {
-      setError("Please enter a valid email address")
-      return
+      setError("Please enter a valid email address");
+      return;
     }
 
     if (!password) {
-      setError("Please enter the password")
-      return
+      setError("Please enter the password");
+      return;
     }
 
-    setError("")
-
-    // Login API
+    setError("");
+    setIsLoading(true);
 
     try {
-      dispatch(signInStart())
+      dispatch(signInStart());
 
-      const res = await axios.post(
-        "https://backendnotes-taupe.vercel.app/api/auth/signin",
-        { email, password },
-        { withCredentials: true }
-      )
+      const { data } = await axios.post("/api/auth/signin", { email, password });
 
-      if (res.data.success === false) {
-        toast.error(res.data.message)
-        console.log(res.data)
-        dispatch(signInFailure(data.message))
+      if (data.success === false) {
+        toast.error(data.message);
+        dispatch(signInFailure(data.message));
+        return;
       }
 
-      toast.success(res.data.message)
-      dispatch(signInSuccess(res.data))
-      navigate("/")
+      toast.success("Login successful!");
+      dispatch(signInSuccess(data));
+      navigate("/");
     } catch (error) {
-      toast.error(error.message)
-      dispatch(signInFailure(error.message))
+      const errorMessage = error.response?.data?.message || 
+                         error.message || 
+                         "Login failed. Please try again.";
+      toast.error(errorMessage);
+      dispatch(signInFailure(errorMessage));
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center mt-28">
@@ -81,14 +86,18 @@ const Login = () => {
 
           {error && <p className="text-red-500 text-sm pb-1">{error}</p>}
 
-          <button type="submit" className="btn-primary">
-            LOGIN
+          <button 
+            type="submit" 
+            className="btn-primary"
+            disabled={isLoading}
+          >
+            {isLoading ? "Logging in..." : "LOGIN"}
           </button>
 
           <p className="text-sm text-center mt-4">
             Not registered yet?{" "}
             <Link
-              to={"/signup"}
+              to="/signup"
               className="font-medium text-[#2B85FF] underline"
             >
               Create an account
@@ -97,7 +106,7 @@ const Login = () => {
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
