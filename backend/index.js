@@ -24,7 +24,7 @@ app.use(cookieParser());
 // CORS Configuration (Production-Ready)
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://clientnote.vercel.app"
+  "https://clientnoteapp.vercel.app/"
 ];
 
 app.use(
