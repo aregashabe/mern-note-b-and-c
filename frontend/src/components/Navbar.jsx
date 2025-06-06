@@ -38,35 +38,39 @@ const Navbar = ({ userInfo, onSearchNote, handleClearSearch }) => {
     }
   };
 
-  const onLogout = async () => {
-    try {
-      dispatch(signoutStart());
-
-      const { data } = await axios.post("/api/auth/signout");
-      
-      if (data.success === false) {
-        throw new Error(data.message);
+ const onLogout = async () => {
+  try {
+    dispatch(signoutStart());
+    
+    const { data } = await axios.post("/api/auth/signout", {}, {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json"
       }
-
-      // Clear client-side authentication
-      localStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"];
-      
-      dispatch(signoutSuccess());
-      toast.success("Logged out successfully");
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      dispatch(signoutFailure(error.message));
-      toast.error(error.response?.data?.message || "Logout failed");
-      
-      // Force logout even if server logout failed
-      localStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"];
-      dispatch(signoutSuccess());
-      navigate("/login");
+    });
+    
+    if (data.success === false) {
+      throw new Error(data.message);
     }
-  };
+
+    // Client-side cleanup
+    localStorage.removeItem("token");
+    delete axios.defaults.headers.common["Authorization"];
+    
+    dispatch(signoutSuccess());
+    toast.success("Logged out successfully");
+    navigate("/login");
+    
+  } catch (error) {
+    console.error("Logout error:", error);
+    // Fallback cleanup
+    localStorage.removeItem("token");
+    delete axios.defaults.headers.common["Authorization"];
+    dispatch(signoutSuccess());
+    navigate("/login");
+    toast.error(error.response?.data?.message || "Logout failed");
+  }
+};
 
   return (
     <div className="bg-white flex items-center justify-between px-6 py-2 drop-shadow sticky top-0 z-10">
