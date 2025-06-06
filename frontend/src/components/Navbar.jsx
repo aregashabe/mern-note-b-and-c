@@ -1,58 +1,75 @@
-import React, { useState } from "react"
-import SearchBar from "./SearchBar/SearchBar"
-import ProfileInfo from "./Cards/ProfileInfo"
-import { Link, useNavigate } from "react-router-dom"
-import { useDispatch } from "react-redux"
-import { toast } from "react-toastify"
+import React, { useState } from "react";
+import SearchBar from "./SearchBar/SearchBar";
+import ProfileInfo from "./Cards/ProfileInfo";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { toast } from "react-toastify";
 import {
   signInSuccess,
   signoutFailure,
   signoutStart,
-} from "../redux/user/userSlice"
-import axios from "axios"
+  signoutSuccess
+} from "../redux/user/userSlice";
+import axios from "axios";
+
+// Configure axios defaults
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
+axios.defaults.withCredentials = true;
 
 const Navbar = ({ userInfo, onSearchNote, handleClearSearch }) => {
-  const [searchQuery, setSearchQuery] = useState("")
-
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleSearch = () => {
-    if (searchQuery) {
-      onSearchNote(searchQuery)
+    if (searchQuery.trim()) {
+      onSearchNote(searchQuery);
     }
-  }
+  };
 
   const onClearSearch = () => {
-    setSearchQuery("")
-    handleClearSearch()
-  }
+    setSearchQuery("");
+    handleClearSearch();
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   const onLogout = async () => {
     try {
-      dispatch(signoutStart())
+      dispatch(signoutStart());
 
-      const res = await axios.get("http://localhost:3000/api/auth/signout", {
-        withCredentials: true,
-      })
-
-      if (res.data.success === false) {
-        dispatch(signoutFailure(res.data.message))
-        toast.error(res.data.message)
-        return
+      const { data } = await axios.post("/api/auth/signout");
+      
+      if (data.success === false) {
+        throw new Error(data.message);
       }
 
-      toast.success(res.data.message)
-      dispatch(signInSuccess())
-      navigate("/login")
+      // Clear client-side authentication
+      localStorage.removeItem("token");
+      delete axios.defaults.headers.common["Authorization"];
+      
+      dispatch(signoutSuccess());
+      toast.success("Logged out successfully");
+      navigate("/login");
     } catch (error) {
-      toast.error(error.message)
-      dispatch(signoutFailure(error.message))
+      console.error("Logout error:", error);
+      dispatch(signoutFailure(error.message));
+      toast.error(error.response?.data?.message || "Logout failed");
+      
+      // Force logout even if server logout failed
+      localStorage.removeItem("token");
+      delete axios.defaults.headers.common["Authorization"];
+      dispatch(signoutSuccess());
+      navigate("/login");
     }
-  }
+  };
 
   return (
-    <div className="bg-white flex items-center justify-between px-6 py-2 drop-shadow">
+    <div className="bg-white flex items-center justify-between px-6 py-2 drop-shadow sticky top-0 z-10">
       <Link to={"/"}>
         <h2 className="text-xl font-medium text-black py-2">
           <span className="text-slate-500">Good</span>
@@ -62,14 +79,15 @@ const Navbar = ({ userInfo, onSearchNote, handleClearSearch }) => {
 
       <SearchBar
         value={searchQuery}
-        onChange={({ target }) => setSearchQuery(target.value)}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyPress={handleKeyPress}
         handleSearch={handleSearch}
         onClearSearch={onClearSearch}
       />
 
       <ProfileInfo userInfo={userInfo} onLogout={onLogout} />
     </div>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;
