@@ -14,6 +14,28 @@ import EmptyCard from "../../components/EmptyCard/EmptyCard";
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 axios.defaults.withCredentials = true;
 
+// Axios request interceptor to attach token
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Axios response interceptor to handle 401 errors
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      toast.error('Session expired. Please login again.');
+    }
+    return Promise.reject(error);
+  }
+);
+
 const Home = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [allNotes, setAllNotes] = useState([]);
@@ -40,11 +62,11 @@ const Home = () => {
     try {
       const { data } = await axios.get("/api/note/all");
       if (data.success === false) {
-        toast.error(data.message);
-        return;
+        throw new Error(data.message);
       }
       setAllNotes(data.notes || []);
     } catch (error) {
+      console.error("Fetch notes error:", error);
       toast.error(error.response?.data?.message || "Failed to fetch notes");
     } finally {
       setIsLoading(false);
