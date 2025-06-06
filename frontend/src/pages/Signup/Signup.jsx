@@ -104,10 +104,10 @@ const Signup = () => {
           />
 
           <PasswordInput
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-          />
+  name="password"  // This was missing
+  value={formData.password}
+  onChange={handleChange}
+/>
 
           {error && (
             <p className="text-red-500 text-sm pb-1">
